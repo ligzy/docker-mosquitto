@@ -176,3 +176,7 @@ And now everything *should* work! ;)
 ## Contributors
 
 - See [contributors page](https://github.com/jllopis/docker-mosquitto/graphs/contributors) for a list of contributors.
+
+## tools
+http://rockingdlabs.dunmire.org/exercises-experiments/ssl-client-certs-to-secure-mqtt
+https://primalcortex.wordpress.com/2016/03/31/mqtt-mosquitto-broker-with-ssltls-transport-security/
