@@ -95,7 +95,7 @@ EXPOSE 1883 8883
 # MQTT over websocket default port and default port over TLS
 EXPOSE 9001 9002
 
-VOLUME ["/var/lib/mosquitto", "/etc/mosquitto", "/etc/mosquitto.d"]
+VOLUME ["/var/lib/mosquitto", "/etc/mosquitto", "/etc/mosquitto.d","/var/log/mosquitto"]
 
 ENTRYPOINT ["/run.sh"]
 CMD ["mosquitto"]
