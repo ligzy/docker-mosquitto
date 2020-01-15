@@ -1,4 +1,5 @@
 FROM alpine:3.11.2
+#FROM centos:7
 
 # Build-time metadata as defined at http://label-schema.org
 ARG BUILD_DATE
@@ -15,6 +16,7 @@ LABEL maintainer="Joan Llopis <jllopisg@gmail.com>" \
       org.label-schema.version=$VERSION \
       org.label-schema.schema-version="1.0"
 
+RUN apk add --no-cache bash
 RUN addgroup -S mosquitto && \
     adduser -S -H -h /var/empty -s /sbin/nologin -D -G mosquitto mosquitto
 
@@ -28,6 +30,8 @@ COPY run.sh /
 RUN apk --no-cache add --virtual buildDeps git cmake build-base openssl-dev c-ares-dev util-linux-dev hiredis-dev postgresql-dev curl-dev; \
     chmod +x /run.sh && \
     mkdir -p /var/lib/mosquitto && \
+    mkdir -p /var/log/mosquitto && \
+    mkdir -p /opt/mosquitto/log && \
     touch /var/lib/mosquitto/.keep && \
     mkdir -p /etc/mosquitto.d && \
     apk add hiredis postgresql-libs libuuid c-ares openssl curl ca-certificates && \
@@ -88,14 +92,16 @@ RUN apk --no-cache add --virtual buildDeps git cmake build-base openssl-dev c-ar
     rm -rf libwebsockets && \
     apk del buildDeps && rm -rf /var/cache/apk/*
 
+
 ADD mosquitto.conf /etc/mosquitto/mosquitto.conf
 
 # MQTT default port and default port over TLS
 EXPOSE 1883 8883
 # MQTT over websocket default port and default port over TLS
 EXPOSE 9001 9002
+EXPOSE 8080 8443
 
-VOLUME ["/var/lib/mosquitto", "/etc/mosquitto", "/etc/mosquitto.d","/var/log/mosquitto"]
+VOLUME ["/opt/mosquitto","/var/lib/mosquitto", "/etc/mosquitto", "/etc/mosquitto.d","/var/log/mosquitto"]
 
 ENTRYPOINT ["/run.sh"]
 CMD ["mosquitto"]
