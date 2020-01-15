@@ -35,7 +35,7 @@ RUN apk --no-cache add --virtual buildDeps git cmake build-base openssl-dev c-ar
     mkdir -p /opt/mosquitto/data && \
     touch /var/lib/mosquitto/.keep && \
     mkdir -p /etc/mosquitto.d && \
-    apk add hiredis postgresql-libs libuuid c-ares openssl curl ca-certificates mysql-client mongodb mongodb-tools && \
+    apk add hiredis postgresql-libs libuuid c-ares openssl curl ca-certificates mysql-client mongodb-tools && \
     git clone -b ${LIBWEBSOCKETS_VERSION} https://github.com/warmcat/libwebsockets && \
     cd libwebsockets && \
     cmake . \
