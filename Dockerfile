@@ -1,10 +1,10 @@
 FROM alpine:3.11.2
-#FROM centos:7
 
 # Build-time metadata as defined at http://label-schema.org
 ARG BUILD_DATE
 ARG VCS_REF
 ARG VERSION
+
 LABEL maintainer="Joan Llopis <jllopisg@gmail.com>" \
       org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.name="mosquitto MQTT Brocker with auth-plugin" \
@@ -27,16 +27,28 @@ ENV LIBWEBSOCKETS_VERSION=v2.4.2
 
 COPY run.sh /
 
-RUN apk --no-cache add --virtual buildDeps git cmake build-base openssl-dev c-ares-dev util-linux-dev hiredis-dev postgresql-dev curl-dev; \
-    chmod +x /run.sh && \
+RUN apk --no-cache add --virtual buildDeps git cmake build-base openssl-dev c-ares-dev util-linux-dev hiredis-dev postgresql-dev curl-dev libxslt docbook-xsl automake autoconf libtool
+RUN apk add hiredis postgresql-libs libuuid c-ares openssl curl ca-certificates mysql-client mariadb-dev 
+RUN apk add perl perl-net-ssleay perl-io-socket-ssl perl-libwww
+#RUN apk add mongo-c-driver-1.15.1-r0 mongo-c-driver-dev-1.15.1-r0 libbson-1.15.1-r0 libbson-dev-1.15.1-r0 
+#RUN wget https://github.com/mongodb/mongo-c-driver/releases/download/1.4.0/mongo-c-driver-1.4.0.tar.gz
+#RUN tar xzf mongo-c-driver-1.4.0.tar.gz
+#RUN cd mongo-c-driver-1.4.0 && ./configure && make && make install && cd .. && rm mongo-c-driver-1.4.0* -rf
+#RUN git clone https://github.com/mongodb/mongo-c-driver.git && \
+#    cd mongo-c-driver && \
+#    git checkout ${MONGOC_VERSION} && \
+#    sh autogen.sh --with-libbson=bundled && \
+#    make && \
+#    make install && \
+#    cd / 
+RUN chmod +x /run.sh && \
     mkdir -p /var/lib/mosquitto && \
     mkdir -p /var/log/mosquitto && \
     mkdir -p /opt/mosquitto/log && \
     mkdir -p /opt/mosquitto/data && \
     touch /var/lib/mosquitto/.keep && \
-    mkdir -p /etc/mosquitto.d && \
-    apk add hiredis postgresql-libs libuuid c-ares openssl curl ca-certificates mysql-client mongodb-tools && \
-    git clone -b ${LIBWEBSOCKETS_VERSION} https://github.com/warmcat/libwebsockets && \
+    mkdir -p /etc/mosquitto.d  
+RUN git clone -b ${LIBWEBSOCKETS_VERSION} https://github.com/warmcat/libwebsockets && \
     cd libwebsockets && \
     cmake . \
       -DCMAKE_BUILD_TYPE=MinSizeRel \
@@ -75,14 +87,14 @@ RUN apk --no-cache add --virtual buildDeps git cmake build-base openssl-dev c-ar
     cd mosquitto-auth-plug && \
     cp config.mk.in config.mk && \
     sed -i "s/BACKEND_CDB ?= no/BACKEND_CDB ?= no/" config.mk && \
-    sed -i "s/BACKEND_MYSQL ?= yes/BACKEND_MYSQL ?= yes/" config.mk && \
+    sed -i "s/BACKEND_MYSQL ?= no/BACKEND_MYSQL ?= yes/" config.mk && \
     sed -i "s/BACKEND_SQLITE ?= no/BACKEND_SQLITE ?= no/" config.mk && \
     sed -i "s/BACKEND_REDIS ?= no/BACKEND_REDIS ?= yes/" config.mk && \
     sed -i "s/BACKEND_POSTGRES ?= no/BACKEND_POSTGRES ?= yes/" config.mk && \
     sed -i "s/BACKEND_LDAP ?= no/BACKEND_LDAP ?= no/" config.mk && \
     sed -i "s/BACKEND_HTTP ?= no/BACKEND_HTTP ?= yes/" config.mk && \
     sed -i "s/BACKEND_JWT ?= no/BACKEND_JWT ?= no/" config.mk && \
-    sed -i "s/BACKEND_MONGO ?= no/BACKEND_MONGO ?= yes/" config.mk && \
+    sed -i "s/BACKEND_MONGO ?= no/BACKEND_MONGO ?= no/" config.mk && \
     sed -i "s/BACKEND_FILES ?= no/BACKEND_FILES ?= no/" config.mk && \
     sed -i "s/BACKEND_MEMCACHED ?= no/BACKEND_MEMCACHED ?= no/" config.mk && \
     sed -i "s/MOSQUITTO_SRC =/MOSQUITTO_SRC = ..\//" config.mk && \
