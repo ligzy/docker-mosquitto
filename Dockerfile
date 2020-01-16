@@ -1,105 +1,74 @@
-FROM alpine:3.11.2
-#FROM centos:7
+FROM alpine:3.6
 
-# Build-time metadata as defined at http://label-schema.org
-ARG BUILD_DATE
-ARG VCS_REF
-ARG VERSION
-LABEL maintainer="Joan Llopis <jllopisg@gmail.com>" \
-      org.label-schema.build-date=$BUILD_DATE \
-      org.label-schema.name="mosquitto MQTT Brocker with auth-plugin" \
-      org.label-schema.description="This project builds mosquitto with auth-plugin. \
-      It also has mosquitto_pub, mosquitto_sub and np." \
-      org.label-schema.url="https://cloud.docker.com/u/jllopis/repository/docker/jllopis/mosquitto" \
-      org.label-schema.vcs-ref=$VCS_REF \
-      org.label-schema.vcs-url="https://github.com/jllopis/docker-mosquitto" \
-      org.label-schema.version=$VERSION \
-      org.label-schema.schema-version="1.0"
+#VOLUME ["/var/lib/mosquitto", "/etc/mosquitto", "/etc/mosquitto.d"]
+#VOLUME ["/mosquitto/config", "/mosquitto/data", "/mosquitto/log"]
 
-RUN apk add --no-cache bash
 RUN addgroup -S mosquitto && \
     adduser -S -H -h /var/empty -s /sbin/nologin -D -G mosquitto mosquitto
 
 ENV PATH=/usr/local/bin:/usr/local/sbin:$PATH
-ENV MOSQUITTO_VERSION=v1.6.8
-#ENV LIBWEBSOCKETS_VERSION=v3.2.1
-ENV LIBWEBSOCKETS_VERSION=v2.4.2
+ENV MOSQUITTO_VERSION=v1.4.14
+ENV MONGOC_VERSION=9982861dac67bae659ce8a3370b18c3a44f764fc
+ENV AUTHPLUG_VERSION=b74a79a6767b56c773e21e9c4cf12b392c29e8e2
 
 COPY run.sh /
-
-RUN apk --no-cache add --virtual buildDeps git cmake build-base openssl-dev c-ares-dev util-linux-dev hiredis-dev postgresql-dev curl-dev; \
-    chmod +x /run.sh && \
+COPY libressl.patch /
+RUN chmod +x /run.sh && \
     mkdir -p /var/lib/mosquitto && \
     mkdir -p /var/log/mosquitto && \
     mkdir -p /opt/mosquitto/log && \
     mkdir -p /opt/mosquitto/data && \
     touch /var/lib/mosquitto/.keep && \
-    mkdir -p /etc/mosquitto.d && \
-    apk add hiredis postgresql-libs libuuid c-ares openssl curl ca-certificates mysql-client mongodb-tools && \
-    git clone -b ${LIBWEBSOCKETS_VERSION} https://github.com/warmcat/libwebsockets && \
-    cd libwebsockets && \
-    cmake . \
-      -DCMAKE_BUILD_TYPE=MinSizeRel \
-      -DLWS_IPV6=ON \
-      -DLWS_WITHOUT_CLIENT=ON \
-      -DLWS_WITHOUT_TESTAPPS=ON \
-      -DLWS_WITHOUT_EXTENSIONS=ON \
-      -DLWS_WITHOUT_BUILTIN_GETIFADDRS=ON \
-      -DLWS_WITH_ZIP_FOPS=OFF \
-      -DLWS_WITH_ZLIB=OFF \
-      -DLWS_WITH_SHARED=OFF && \
-    make -j "$(nproc)" && \
-    rm -rf /root/.cmake && \
-    cd .. && \
-    git clone -b ${MOSQUITTO_VERSION} https://github.com/eclipse/mosquitto.git && \
-    cd mosquitto && \
-    make -j "$(nproc)" \
-      CFLAGS="-Wall -O2 -I/libwebsockets/include" \
-      LDFLAGS="-L/libwebsockets/lib" \
-      WITH_SRV=yes \
-      WITH_STRIP=yes \
-      WITH_ADNS=no \
-      WITH_DOCS=no \
-      WITH_MEMORY_TRACKING=no \
-      WITH_TLS_PSK=no \
-      WITH_WEBSOCKETS=yes \
-    binary && \
-    install -s -m755 client/mosquitto_pub /usr/bin/mosquitto_pub && \
-    install -s -m755 client/mosquitto_rr /usr/bin/mosquitto_rr && \
-    install -s -m755 client/mosquitto_sub /usr/bin/mosquitto_sub && \
-    install -s -m644 lib/libmosquitto.so.1 /usr/lib/libmosquitto.so.1 && \
-    ln -sf /usr/lib/libmosquitto.so.1 /usr/lib/libmosquitto.so && \
-    install -s -m755 src/mosquitto /usr/sbin/mosquitto && \
-    install -s -m755 src/mosquitto_passwd /usr/bin/mosquitto_passwd && \
-    git clone https://github.com/vankxr/mosquitto-auth-plug && \
+    mkdir -p /etc/mosquitto.d
+RUN buildDeps='git build-base libressl-dev libwebsockets-dev c-ares-dev util-linux-dev curl-dev libxslt docbook-xsl automake autoconf libtool'; \
+    chmod +x /run.sh && \
+    mkdir -p /mosquitto/data && \
+    touch /mosquitto/data/.keep && \
+    apk update && \
+    apk add $buildDeps libwebsockets libuuid c-ares libressl curl ca-certificates mysql-client mariadb-dev postgresql-libs postgresql-client postgresql-dev && \
+    git clone https://github.com/mongodb/mongo-c-driver.git && \
+    cd mongo-c-driver && \
+    git checkout ${MONGOC_VERSION} && \
+    sh autogen.sh --with-libbson=bundled && \
+    make && \
+    make install && \
+    cd / && \
+    git clone https://github.com/eclipse/mosquitto.git mosquitto_src && \
+    cd mosquitto_src && \
+    git checkout ${MOSQUITTO_VERSION} -b ${MOSQUITTO_VERSION} && \
+    sed -i -e "s|(INSTALL) -s|(INSTALL)|g" -e 's|--strip-program=${CROSS_COMPILE}${STRIP}||' */Makefile */*/Makefile && \
+    sed -i "s@/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl@/usr/share/xml/docbook/xsl-stylesheets-1.79.1/manpages/docbook.xsl@" man/manpage.xsl && \
+    ## musl c lib do not support libanl
+    sed -i 's/ -lanl//' config.mk && \
+    patch -p1 < /libressl.patch && \
+    # wo WITH_MEMORY_TRACKING=no, mosquitto segfault after receiving first message
+    # libressl does not suppor PSK
+    make WITH_MEMORY_TRACKING=no WITH_SRV=yes WITH_WEBSOCKETS=yes WITH_TLS_PSK=no && \
+    make install && \
+    git clone git://github.com/jpmens/mosquitto-auth-plug.git && \
     cd mosquitto-auth-plug && \
+    git checkout ${AUTHPLUG_VERSION} && \
     cp config.mk.in config.mk && \
-    sed -i "s/BACKEND_CDB ?= no/BACKEND_CDB ?= no/" config.mk && \
-    sed -i "s/BACKEND_MYSQL ?= yes/BACKEND_MYSQL ?= yes/" config.mk && \
-    sed -i "s/BACKEND_SQLITE ?= no/BACKEND_SQLITE ?= no/" config.mk && \
+    sed -i "s/BACKEND_MONGO ?= no/BACKEND_MONGO ?= yes/" config.mk && \
+    sed -i "s/BACKEND_FILES ?= no/BACKEND_FILES ?= yes/" config.mk && \
+    sed -i "s/BACKEND_MYSQL ?= no/BACKEND_MYSQL ?= yes/" config.mk && \
     sed -i "s/BACKEND_REDIS ?= no/BACKEND_REDIS ?= yes/" config.mk && \
     sed -i "s/BACKEND_POSTGRES ?= no/BACKEND_POSTGRES ?= yes/" config.mk && \
-    sed -i "s/BACKEND_LDAP ?= no/BACKEND_LDAP ?= no/" config.mk && \
-    sed -i "s/BACKEND_HTTP ?= no/BACKEND_HTTP ?= yes/" config.mk && \
-    sed -i "s/BACKEND_JWT ?= no/BACKEND_JWT ?= no/" config.mk && \
-    sed -i "s/BACKEND_MONGO ?= no/BACKEND_MONGO ?= yes/" config.mk && \
-    sed -i "s/BACKEND_FILES ?= no/BACKEND_FILES ?= no/" config.mk && \
-    sed -i "s/BACKEND_MEMCACHED ?= no/BACKEND_MEMCACHED ?= no/" config.mk && \
     sed -i "s/MOSQUITTO_SRC =/MOSQUITTO_SRC = ..\//" config.mk && \
-    make -j "$(nproc)" && \
-    install -s -m755 auth-plug.so /usr/lib/ && \
-    install -s -m755 np /usr/bin/ && \
-    cd / && rm -rf mosquitto && \
-    rm -rf libwebsockets && \
-    apk del buildDeps && rm -rf /var/cache/apk/*
-
+    sed -i "s/EVP_MD_CTX_new/EVP_MD_CTX_create/g" cache.c && \
+    sed -i "s/EVP_MD_CTX_free/EVP_MD_CTX_destroy/g" cache.c && \
+    make && \
+    cp auth-plug.so /usr/lib/ && \
+    cp auth-plug.so /usr/local/lib/ && \
+    cp np /usr/local/bin/ && chmod +x /usr/local/bin/np && \
+    cd / && rm -rf mosquitto_src && rm /libressl.patch && rm -rf mongo-c-driver && \
+    apk del $buildDeps && rm -rf /var/cache/apk/*
 
 ADD mosquitto.conf /etc/mosquitto/mosquitto.conf
 
 # MQTT default port and default port over TLS
 EXPOSE 1883 8883
 # MQTT over websocket default port and default port over TLS
-EXPOSE 9001 9002
 EXPOSE 8080 8443
 
 VOLUME ["/opt/mosquitto","/var/lib/mosquitto", "/etc/mosquitto", "/etc/mosquitto.d","/var/log/mosquitto"]
