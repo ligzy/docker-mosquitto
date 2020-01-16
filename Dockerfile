@@ -1,11 +1,11 @@
 FROM alpine:3.6
 
-
 RUN addgroup -S mosquitto && \
     adduser -S -H -h /var/empty -s /sbin/nologin -D -G mosquitto mosquitto
 
 ENV PATH=/usr/local/bin:/usr/local/sbin:$PATH
-ENV MOSQUITTO_VERSION=v1.6.8
+ENV MOSQUITTO_VERSION=v1.4.14
+#ENV MOSQUITTO_VERSION=v1.6.8
 ENV MONGOC_VERSION=9982861dac67bae659ce8a3370b18c3a44f764fc
 ENV AUTHPLUG_VERSION=b74a79a6767b56c773e21e9c4cf12b392c29e8e2
 
@@ -23,7 +23,7 @@ RUN buildDeps='git build-base libressl-dev libwebsockets-dev c-ares-dev util-lin
     mkdir -p /mosquitto/data && \
     touch /mosquitto/data/.keep && \
     apk update && \
-    apk add $buildDeps libwebsockets libuuid c-ares libressl curl ca-certificates mysql-client mariadb-dev postgresql-client postgresql-dev postgresql-libs hiredis-dev hiredis && \
+    apk add $buildDeps openssl libwebsockets libuuid c-ares libressl curl ca-certificates mysql-client mariadb-dev postgresql-client postgresql-dev postgresql-libs hiredis-dev hiredis && \
     git clone https://github.com/mongodb/mongo-c-driver.git && \
     cd mongo-c-driver && \
     git checkout ${MONGOC_VERSION} && \
@@ -74,3 +74,4 @@ VOLUME ["/opt/mosquitto","/var/lib/mosquitto", "/etc/mosquitto", "/etc/mosquitto
 
 ENTRYPOINT ["/run.sh"]
 CMD ["mosquitto"]
+
