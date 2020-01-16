@@ -1,13 +1,11 @@
 FROM alpine:3.6
 
-#VOLUME ["/var/lib/mosquitto", "/etc/mosquitto", "/etc/mosquitto.d"]
-#VOLUME ["/mosquitto/config", "/mosquitto/data", "/mosquitto/log"]
 
 RUN addgroup -S mosquitto && \
     adduser -S -H -h /var/empty -s /sbin/nologin -D -G mosquitto mosquitto
 
 ENV PATH=/usr/local/bin:/usr/local/sbin:$PATH
-ENV MOSQUITTO_VERSION=v1.4.14
+ENV MOSQUITTO_VERSION=v1.6.8
 ENV MONGOC_VERSION=9982861dac67bae659ce8a3370b18c3a44f764fc
 ENV AUTHPLUG_VERSION=b74a79a6767b56c773e21e9c4cf12b392c29e8e2
 
@@ -25,7 +23,7 @@ RUN buildDeps='git build-base libressl-dev libwebsockets-dev c-ares-dev util-lin
     mkdir -p /mosquitto/data && \
     touch /mosquitto/data/.keep && \
     apk update && \
-    apk add $buildDeps libwebsockets libuuid c-ares libressl curl ca-certificates mysql-client mariadb-dev postgresql-libs postgresql-client postgresql-dev && \
+    apk add $buildDeps libwebsockets libuuid c-ares libressl curl ca-certificates mysql-client mariadb-dev postgresql-client postgresql-dev postgresql-libs hiredis-dev hiredis && \
     git clone https://github.com/mongodb/mongo-c-driver.git && \
     cd mongo-c-driver && \
     git checkout ${MONGOC_VERSION} && \
@@ -53,6 +51,7 @@ RUN buildDeps='git build-base libressl-dev libwebsockets-dev c-ares-dev util-lin
     sed -i "s/BACKEND_FILES ?= no/BACKEND_FILES ?= yes/" config.mk && \
     sed -i "s/BACKEND_MYSQL ?= no/BACKEND_MYSQL ?= yes/" config.mk && \
     sed -i "s/BACKEND_REDIS ?= no/BACKEND_REDIS ?= yes/" config.mk && \
+    sed -i "s/BACKEND_HTTP ?= no/BACKEND_HTTP ?= yes/" config.mk && \
     sed -i "s/BACKEND_POSTGRES ?= no/BACKEND_POSTGRES ?= yes/" config.mk && \
     sed -i "s/MOSQUITTO_SRC =/MOSQUITTO_SRC = ..\//" config.mk && \
     sed -i "s/EVP_MD_CTX_new/EVP_MD_CTX_create/g" cache.c && \

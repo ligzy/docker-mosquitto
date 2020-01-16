@@ -2,12 +2,14 @@ version: '2'
 
 services:
         redis:
-                image: redis:5.0.4-alpine
+                image: redis:3
                 volumes:
                 - ${PWD}/tmp/data:/data
                 ports:
-                - "6379:6379"
+                - "6379"
                 container_name: "redis-mosq"
+                networks:
+                - mosqnet
 
         mosquitto:
                 build: .
@@ -19,8 +21,14 @@ services:
                 environment:
                 - DOMAIN=example.local
                 - PORT=8080
+                networks:
+                - mosqnet
                 depends_on:
                 - redis
                 labels:
-                - "local.example.description=Mosquitto v1.6.8 MQTT server"
+                - "local.example.description=Mosquitto v1.4.12 MQTT server"
+#                links:
+#                - redis:mosquitto.redis.link
 
+networks:
+        mosqnet:

@@ -1,24 +1,19 @@
-docker-mosquitto
+docker-mosquitto-mongo-auth
 ================
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/jllopis/mosquitto.svg)](https://cloud.docker.com/u/jllopis/repository/docker/jllopis/mosquitto)
-[![Docker Stars](https://img.shields.io/docker/stars/jllopis/mosquitto.svg)](https://cloud.docker.com/u/jllopis/repository/docker/jllopis/mosquitto)
-[![Docker Build Status](https://img.shields.io/docker/build/jllopis/mosquitto.svg)](https://cloud.docker.com/u/jllopis/repository/docker/jllopis/mosquitto)
-[![](https://images.microbadger.com/badges/image/jllopis/mosquitto.svg)](https://microbadger.com/images/jllopis/mosquitto "Get your own image badge on microbadger.com")
-
-Mosquitto MQTT Broker on Docker Image.
+Mosquitto MQTT Broker on Docker Image with authentication via mongoDB.
 
 # Version
 
-**mosquitto** v1.6.8
+**mosquitto** v1.4.11
 
 This version implement MQTT over WebSocket. You can use an MQTT JavaScript library to connect, like Paho: https://github.com/eclipse/paho.mqtt.javascript
 
-It has the auth plugin `https://github.com/jpmens/mosquitto-auth-plug` included. It uses (and is compiled with) support for `Redis`, `PostgreSQL`, `http` and `JWT` backends. The additional config for this plugin (sample `auth-plugin.conf` included) can be bind mounted in the extended configuration directory: `/etc/mosquitto.d`. Any file with a `.conf` extension will be loaded by `mosquitto` on startup.
+It has the auth plugin `https://github.com/jpmens/mosquitto-auth-plug` included. It uses (and is compiled with) support for a `Redis` and `http` backends. The additional config for this plugin (sample `auth-plugin.conf` included) can be bind mounted in the extended configuration directory: `/etc/mosquitto.d`. Any file with a `.conf` extension will be loaded by `mosquitto` on startup.
 
 For details on the auth plugin configuration, refer to the author repository. A little quick&dirty example its included at the end.
 
-The docker images builds with _Official Alpine Linux edge_.
+The docker images builds with Official Alpine Linux 3.4.
 
 # Build
 
@@ -32,13 +27,13 @@ Alternatively you can start it by means of [docker-compose](https://docs.docker.
 
 You can specify your repository and tag by
 
-    $ sudo make REPOSITORY=my_own_repo/mqtt TAG=v1.6.8
+    $ sudo make REPOSITORY=my_own_repo/mqtt TAG=v1.4.11
 
-Default for **REPOSITORY** is **jllopis/mosquitto** (should change this) and for **TAG** is **mosquitto version (1.5 now)**.
+Default for **REPOSITORY** is **jllopis/mosquitto** (should change this) and for **TAG** is **mosquitto version (1.4.11 now)**.
 
 Actually the command executed by make is
 
-    docker build --no-cache -t jllopis/mosquitto:v1.6.8 .
+    docker build --no-cache -t jllopis/mosquitto:v1.4.11 .
 
 # Persistence and Configuration
 
@@ -61,12 +56,12 @@ See the following examples for some guidance:
     $ sudo docker run -ti \
       -v /tmp/mosquitto/etc/mosquitto:/etc/mosquitto \
       -v /tmp/mosquitto/etc/mosquitto.d:/etc/mosquitto.d \
-      -v /tmp/mosquitto/var/lib/mosquitto:/var/lib/mosquitto \
-      -v /tmp/mosquitto/auth-plug.conf:/etc/mosquitto.d/auth-plugin.conf \
+      -v /tmp/mosquitto/var/lib/mosquitto:/var/lib/mosquitto
+      -v /tmp/mosquitto/auth-plug.conf:/etc/mosquitto.d/auth-plugin.conf
       --name mqtt \
       -p 1883:1883 \
       -p 9883:9883 \
-      jllopis/mosquitto:v1.6.8
+      jllopis/mosquitto:v1.4.11
 
 ## Data Only Containers
 
@@ -81,7 +76,7 @@ and then just use **VOLUMES_FROM** in your container:
       --name mqtt \
       -p 1883:1883 \
       -p 9883:9883 \
-      jllopis/mosquitto:v1.6.8
+      jllopis/mosquitto:v1.4.11
 
 The image will save its auth data (if configured) to _redis_. You can start and link a _redis_ container or use an existing _redis_ instance (remember to configure the plugin).
 
@@ -96,7 +91,7 @@ By default, there is an `admin` superuser added to `auth-plugin.conf`. We will u
     $ sudo docker run -d \
       --name redis_1 \
       -p 6379 \
-      -v ${PWD}/tmp/redis-data:/data \
+      -v ${PWD}/tmp/redis-data:/data
       redis:3
 
 ## 2. Start mosquitto with the linked redis
@@ -104,19 +99,19 @@ By default, there is an `admin` superuser added to `auth-plugin.conf`. We will u
     $ sudo docker run -d \
       -v ${PWD}/mosquitto/etc/mosquitto:/etc/mosquitto \
       -v ${PWD}/mosquitto/etc/mosquitto.d:/etc/mosquitto.d \
-      -v ${PWD}/mosquitto/var/lib/mosquitto:/var/lib/mosquitto \
-      -v ${PWD}/mosquitto/auth-plug.conf:/etc/mosquitto.d/auth-plugin.conf \
+      -v ${PWD}/mosquitto/var/lib/mosquitto:/var/lib/mosquitto
+      -v ${PWD}/mosquitto/auth-plug.conf:/etc/mosquitto.d/auth-plugin.conf
       --name mqtt \
       -p 1883:1883 \
       -p 9883:9883 \
       --link redis:mosquitto.redis.link \
-      jllopis/mosquitto:v1.6.8
+      jllopis/mosquitto:v1.4.11
 
 ## 3. Add a password for the admin user
 
 (or whatever user u have configured...)
 
-    $ docker run -ti --rm jllopis/mosquitto:v1.6.8 np -p secretpass
+    $ docker run -ti --rm jllopis/mosquitto:v1.4.11 np -p secretpass
     PBKDF2$sha256$901$5nH8dWZV5NXTI63/$0n3XrdhMxe7PedKZUcPKMd0WHka4408V
 
     $ docker run -it --link redis_1:redis --rm redis sh -c 'exec redis-cli -h "$REDIS_PORT_6379_TCP_ADDR" -p "$REDIS_PORT_6379_TCP_PORT"'
@@ -176,7 +171,3 @@ And now everything *should* work! ;)
 ## Contributors
 
 - See [contributors page](https://github.com/jllopis/docker-mosquitto/graphs/contributors) for a list of contributors.
-
-## tools
-http://rockingdlabs.dunmire.org/exercises-experiments/ssl-client-certs-to-secure-mqtt
-https://primalcortex.wordpress.com/2016/03/31/mqtt-mosquitto-broker-with-ssltls-transport-security/
