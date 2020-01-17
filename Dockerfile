@@ -16,7 +16,8 @@ LABEL maintainer="Jeremy Li<lizhiyong1@soundai.com>" \
       org.label-schema.version=$VERSION \
       org.label-schema.schema-version="1.0"
 
-RUN apk add --no-cache bash
+#RUN apk add --no-cache bash
+RUN apk add bash
 RUN addgroup -S mosquitto && \
     adduser -S -H -h /var/empty -s /sbin/nologin -D -G mosquitto mosquitto
 
@@ -27,8 +28,8 @@ ENV LIBWEBSOCKETS_VERSION=v2.4.2
 
 COPY run.sh /
 
-RUN apk --no-cache add --virtual buildDeps git cmake build-base openssl-dev c-ares-dev util-linux-dev hiredis-dev postgresql-dev curl-dev libxslt docbook-xsl automake autoconf libtool
-RUN apk add hiredis postgresql-libs libuuid c-ares openssl curl ca-certificates mysql-client mariadb-dev libssl-dev libsasl2-dev
+RUN apk add --virtual buildDeps git cmake build-base openssl-dev c-ares-dev util-linux-dev hiredis-dev postgresql-dev curl-dev libxslt docbook-xsl automake autoconf libtool
+RUN apk add hiredis postgresql-libs libuuid c-ares openssl curl ca-certificates mysql-client mariadb-dev 
 #RUN apk add perl perl-net-ssleay perl-io-socket-ssl perl-libwww
 #RUN wget https://github.com/mongodb/mongo-c-driver/releases/download/1.15.1/mongo-c-driver-1.15.1.tar.gz
 #COPY mongo-c-driver-1.15.1.tar.gz ./
