@@ -34,8 +34,8 @@ RUN apk add hiredis postgresql-libs libuuid c-ares openssl curl ca-certificates 
 #RUN wget https://github.com/mongodb/mongo-c-driver/releases/download/1.15.1/mongo-c-driver-1.15.1.tar.gz
 #COPY mongo-c-driver-1.15.1.tar.gz ./
 #RUN tar -xvf mongo-c-driver-1.15.1.tar.gz
-RUN wget https://github.com/mongodb/mongo-c-driver/releases/download/1.13.0/mongo-c-driver-1.13.0.tar.gz
-#COPY mongo-c-driver-1.13.0.tar.gz ./
+#RUN wget https://github.com/mongodb/mongo-c-driver/releases/download/1.13.0/mongo-c-driver-1.13.0.tar.gz
+COPY mongo-c-driver-1.13.0.tar.gz ./
 RUN tar -xvf mongo-c-driver-1.13.0.tar.gz
 RUN cd mongo-c-driver-1.13.0 && \
         cmake -DCMAKE_BUILD_TYPE=Release \
@@ -118,7 +118,7 @@ RUN git clone -b ${LIBWEBSOCKETS_VERSION} https://github.com/warmcat/libwebsocke
     sed -i "s/BACKEND_LDAP ?= no/BACKEND_LDAP ?= no/" config.mk && \
     sed -i "s/BACKEND_HTTP ?= no/BACKEND_HTTP ?= yes/" config.mk && \
     sed -i "s/BACKEND_JWT ?= no/BACKEND_JWT ?= no/" config.mk && \
-    sed -i "s/BACKEND_MONGO ?= no/BACKEND_MONGO ?= no/" config.mk && \
+    sed -i "s/BACKEND_MONGO ?= no/BACKEND_MONGO ?= yes/" config.mk && \
     sed -i "s/BACKEND_FILES ?= no/BACKEND_FILES ?= no/" config.mk && \
     sed -i "s/BACKEND_MEMCACHED ?= no/BACKEND_MEMCACHED ?= no/" config.mk && \
     sed -i "s/MOSQUITTO_SRC =/MOSQUITTO_SRC = ..\//" config.mk && \
