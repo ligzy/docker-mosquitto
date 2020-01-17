@@ -35,7 +35,7 @@ RUN apk add hiredis postgresql-libs libuuid c-ares openssl curl ca-certificates 
 #COPY mongo-c-driver-1.15.1.tar.gz ./
 #RUN tar -xvf mongo-c-driver-1.15.1.tar.gz
 COPY mongo-c-driver-1.13.0.tar.gz ./
-RUN tar -xVf mongo-c-driver-1.13.0.tar.gz
+RUN tar -xvf mongo-c-driver-1.13.0.tar.gz
 RUN cd mongo-c-driver-1.13.0 && \
         cmake -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=/usr \
