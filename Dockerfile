@@ -5,7 +5,7 @@ ARG BUILD_DATE
 ARG VCS_REF
 ARG VERSION
 
-LABEL maintainer="Joan Llopis <jllopisg@gmail.com>" \
+LABEL maintainer="Jeremy Li<lizhiyong1@soundai.com>" \
       org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.name="mosquitto MQTT Brocker with auth-plugin" \
       org.label-schema.description="This project builds mosquitto with auth-plugin. \
@@ -28,12 +28,34 @@ ENV LIBWEBSOCKETS_VERSION=v2.4.2
 COPY run.sh /
 
 RUN apk --no-cache add --virtual buildDeps git cmake build-base openssl-dev c-ares-dev util-linux-dev hiredis-dev postgresql-dev curl-dev libxslt docbook-xsl automake autoconf libtool
-RUN apk add hiredis postgresql-libs libuuid c-ares openssl curl ca-certificates mysql-client mariadb-dev 
-RUN apk add perl perl-net-ssleay perl-io-socket-ssl perl-libwww
-#RUN apk add mongo-c-driver-1.15.1-r0 mongo-c-driver-dev-1.15.1-r0 libbson-1.15.1-r0 libbson-dev-1.15.1-r0 
-#RUN wget https://github.com/mongodb/mongo-c-driver/releases/download/1.4.0/mongo-c-driver-1.4.0.tar.gz
-#RUN tar xzf mongo-c-driver-1.4.0.tar.gz
-#RUN cd mongo-c-driver-1.4.0 && ./configure && make && make install && cd .. && rm mongo-c-driver-1.4.0* -rf
+RUN apk add hiredis postgresql-libs libuuid c-ares openssl curl ca-certificates mysql-client mariadb-dev libssl-dev libsasl2-dev
+#RUN apk add perl perl-net-ssleay perl-io-socket-ssl perl-libwww
+#RUN wget https://github.com/mongodb/mongo-c-driver/releases/download/1.15.1/mongo-c-driver-1.15.1.tar.gz
+#COPY mongo-c-driver-1.15.1.tar.gz ./
+#RUN tar -xvf mongo-c-driver-1.15.1.tar.gz
+COPY mongo-c-driver-1.13.0.tar.gz ./
+RUN tar -xVf mongo-c-driver-1.13.0.tar.gz
+RUN cd mongo-c-driver-1.13.0 && \
+        cmake -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DENABLE_BSON:STRING=ON \
+        -DENABLE_MONGOC:BOOL=ON \
+        -DENABLE_SSL:STRING=OPENSSL \
+        -DENABLE_AUTOMATIC_INIT_AND_CLEANUP:BOOL=OFF \
+        -DENABLE_MAN_PAGES:BOOL=OFF \
+        -DENABLE_TESTS:BOOL=ON \
+        -DENABLE_EXAMPLES:BOOL=OFF \
+        -DCMAKE_SKIP_RPATH=ON \
+    && make \
+    # Check mongo-c-driver build
+    && MONGOC_TEST_SKIP_MOCK=on \
+    MONGOC_TEST_SKIP_SLOW=on \
+    MONGOC_TEST_SKIP_LIVE=on \
+    make check \
+    \
+    # Install mongo-c-driver
+    && make install
 #RUN git clone https://github.com/mongodb/mongo-c-driver.git && \
 #    cd mongo-c-driver && \
 #    git checkout ${MONGOC_VERSION} && \
